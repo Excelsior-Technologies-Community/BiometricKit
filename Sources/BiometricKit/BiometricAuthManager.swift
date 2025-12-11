@@ -10,12 +10,12 @@ import Foundation
 import LocalAuthentication
 
 
-class BiometricAuthManager: ObservableObject {
+public class BiometricAuthManager: ObservableObject {
+    @Published public var isUnlocked: Bool = false
+    @Published public var errorMessage: String?
+
     
-    @Published var isUnlocked = false
-    @Published var errorMessage: String?
-    
-    func authenticate() {
+    public  func authenticate() {
         let context = LAContext()
         var error: NSError?
         
@@ -45,7 +45,7 @@ class BiometricAuthManager: ObservableObject {
     }
     
     // MARK: Auto-lock functions
-    func appMovedToBackground() {
+    public  func appMovedToBackground() {
         print("🔒 App locked due to background")
         DispatchQueue.main.async {
             self.isUnlocked = false
@@ -53,7 +53,7 @@ class BiometricAuthManager: ObservableObject {
         }
     }
     
-    func appBecameActive() {
+    public func appBecameActive() {
         print("🔐 App became active, isUnlocked: \(isUnlocked)")
         // Always authenticate when app becomes active from background
         if !isUnlocked {
@@ -64,11 +64,11 @@ class BiometricAuthManager: ObservableObject {
 }
 
 
-struct LockScreenView: View {
+public struct LockScreenView: View {
     
     @EnvironmentObject var biometricManager: BiometricAuthManager
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Spacer()
             
