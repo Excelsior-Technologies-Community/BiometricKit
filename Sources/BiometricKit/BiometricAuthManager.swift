@@ -92,21 +92,7 @@ public struct LockScreenView: View {
                     .padding(.horizontal)
                     .padding(.top, 10)
             }
-            
-            Button(action: {
-                biometricManager.authenticate()
-            }) {
-                Text("Try Again")
-                    .fontWeight(.semibold)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-            }
-            .padding(.top, 20)
-            
+ 
             Spacer()
             
             Text("Your app is protected with Face ID")
