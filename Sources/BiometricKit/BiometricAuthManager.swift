@@ -10,13 +10,23 @@ import Foundation
 import LocalAuthentication
 
 
+
 public class BiometricAuthManager: ObservableObject {
     @Published public var isUnlocked: Bool = false
     @Published public var errorMessage: String?
+    
+    // Add flag to track authentication in progress
+    private var isAuthenticating: Bool = false
 
     public init() {}
     
-    public  func authenticate() {
+    public func authenticate() {
+        // Prevent multiple simultaneous authentication requests
+        guard !isAuthenticating else {
+            print("⏳ Authentication already in progress, skipping")
+            return
+        }
+        
         let context = LAContext()
         var error: NSError?
         
@@ -26,8 +36,12 @@ public class BiometricAuthManager: ObservableObject {
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             let reason = "Unlock using Face ID"
             
+            isAuthenticating = true
+            
             context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
+                    self.isAuthenticating = false
+                    
                     if success {
                         self.isUnlocked = true
                         self.errorMessage = nil
@@ -46,7 +60,7 @@ public class BiometricAuthManager: ObservableObject {
     }
     
     // MARK: Auto-lock functions
-    public  func appMovedToBackground() {
+    public func appMovedToBackground() {
         print("🔒 App locked due to background")
         DispatchQueue.main.async {
             self.isUnlocked = false
@@ -55,14 +69,15 @@ public class BiometricAuthManager: ObservableObject {
     }
     
     public func appBecameActive() {
-        print("🔐 App became active, isUnlocked: \(isUnlocked)")
-        // Always authenticate when app becomes active from background
-        if !isUnlocked {
+        print("🔐 App became active, isUnlocked: \(isUnlocked), isAuthenticating: \(isAuthenticating)")
+        // Only authenticate if not already unlocked and not currently authenticating
+        if !isUnlocked && !isAuthenticating {
             print("🔓 Requesting Face ID authentication")
             authenticate()
         }
     }
 }
+
 
 
 public struct LockScreenView: View {
@@ -92,6 +107,7 @@ public struct LockScreenView: View {
                     .padding(.horizontal)
                     .padding(.top, 10)
             }
+            
  
             Spacer()
             
