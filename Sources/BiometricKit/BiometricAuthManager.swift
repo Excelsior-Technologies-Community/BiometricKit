@@ -14,6 +14,7 @@ public class BiometricAuthManager: ObservableObject {
     @Published public var isUnlocked: Bool = false
     @Published public var errorMessage: String?
 
+    public init() {}
     
     public  func authenticate() {
         let context = LAContext()
