@@ -3,13 +3,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "BiometricAuthenticationLayer",
+    name: "BiometricKit",     // MUST MATCH REPO NAME
     platforms: [
         .iOS(.v15)
     ],
     products: [
         .library(
-            name: "BiometricAuthenticationLayer",
+            name: "BiometricKit",  // Library users will import BiometricKit
             targets: ["BiometricKit"]
         )
     ],
@@ -17,12 +17,12 @@ let package = Package(
         .target(
             name: "BiometricKit",
             dependencies: [],
-            path: "Sources/BiometricKit",
-            swiftSettings: [
-                .interoperabilityMode(.C)
-            ]
+            path: "Sources/BiometricKit"
         ),
         .testTarget(
-            name: "BiometricAuthenticationLayerTests",
+            name: "BiometricKitTests",
             dependencies: ["BiometricKit"],
-            path: "Te
+            path: "Tests"
+        )
+    ]
+)
