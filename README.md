@@ -88,7 +88,7 @@ struct ContentView: View {
         Group {
             if biometricManager.isUnlocked {
                 // Your secured main view after successful Face ID authentication
-                DeliveryTrackingAdminView()
+              Text("Unlocked")
             } else {
                 // Built-in lock screen view from BiometricKit
                 LockScreenView()
