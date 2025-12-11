@@ -67,6 +67,8 @@ public class BiometricAuthManager: ObservableObject {
 
 public struct LockScreenView: View {
     
+    public init() {}
+    
     @EnvironmentObject var biometricManager: BiometricAuthManager
     
     public var body: some View {
