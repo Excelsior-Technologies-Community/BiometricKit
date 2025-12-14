@@ -9,14 +9,15 @@
 import Foundation
 import Security
 
-class KeychainManager {
+public class KeychainManager {
     
-    static let shared = KeychainManager()
+    public static let shared = KeychainManager()
 
-    private init() {}
+
+    public init() {}
 
     // Save to Keychain
-    func save(_ value: String, forKey key: String) -> Bool {
+    public  func save(_ value: String, forKey key: String) -> Bool {
         guard let data = value.data(using: .utf8) else { return false }
 
         // Delete old value first
@@ -33,7 +34,7 @@ class KeychainManager {
     }
 
     // Read from Keychain
-    func read(forKey key: String) -> String? {
+    public  func read(forKey key: String) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
@@ -52,7 +53,7 @@ class KeychainManager {
     }
 
     // Delete Keychain Value
-    func delete(_ key: String) -> Bool {
+    public  func delete(_ key: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key

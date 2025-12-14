@@ -10,10 +10,15 @@ import Foundation
 import LocalAuthentication
 
 
-class BiometricAuthManager: ObservableObject {
+
+public class BiometricAuthManager: ObservableObject {
+    @Published public var isUnlocked: Bool = false
+    @Published public var errorMessage: String?
     
-    @Published var isUnlocked = false
-    @Published var errorMessage: String?
+    // Add flag to track authentication in progress
+    private var isAuthenticating: Bool = false
+
+    public init() {}
     
     public func authenticate() {
         // Prevent multiple simultaneous authentication requests
@@ -21,30 +26,19 @@ class BiometricAuthManager: ObservableObject {
             print("⏳ Authentication already in progress, skipping")
             return
         }
-
-        // ❗ SAFETY CHECK: Prevent crash if NSFaceIDUsageDescription is missing
-        if Bundle.main.object(forInfoDictionaryKey: "NSFaceIDUsageDescription") == nil {
-            DispatchQueue.main.async {
-                self.errorMessage = "Face ID permission missing in Info.plist"
-                self.isUnlocked = false
-            }
-            print("⚠️ NSFaceIDUsageDescription missing — Face ID disabled to prevent crash.")
-            return
-        }
-
+        
         let context = LAContext()
         var error: NSError?
-
+        
         context.localizedFallbackTitle = ""
         context.localizedCancelTitle = "Cancel"
-
+        
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             let reason = "Unlock using Face ID"
             
             isAuthenticating = true
             
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
-                                   localizedReason: reason) { success, authError in
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     self.isAuthenticating = false
                     
@@ -59,15 +53,14 @@ class BiometricAuthManager: ObservableObject {
             }
         } else {
             DispatchQueue.main.async {
-                self.errorMessage = error?.localizedDescription ?? "Face ID not available"
+                self.errorMessage = "Face ID not available"
                 self.isUnlocked = false
             }
         }
     }
-
     
     // MARK: Auto-lock functions
-    func appMovedToBackground() {
+    public func appMovedToBackground() {
         print("🔒 App locked due to background")
         DispatchQueue.main.async {
             self.isUnlocked = false
@@ -75,10 +68,10 @@ class BiometricAuthManager: ObservableObject {
         }
     }
     
-    func appBecameActive() {
-        print("🔐 App became active, isUnlocked: \(isUnlocked)")
-        // Always authenticate when app becomes active from background
-        if !isUnlocked {
+    public func appBecameActive() {
+        print("🔐 App became active, isUnlocked: \(isUnlocked), isAuthenticating: \(isAuthenticating)")
+        // Only authenticate if not already unlocked and not currently authenticating
+        if !isUnlocked && !isAuthenticating {
             print("🔓 Requesting Face ID authentication")
             authenticate()
         }
@@ -86,11 +79,14 @@ class BiometricAuthManager: ObservableObject {
 }
 
 
-struct LockScreenView: View {
+
+public struct LockScreenView: View {
+    
+    public init() {}
     
     @EnvironmentObject var biometricManager: BiometricAuthManager
     
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Spacer()
             
@@ -112,20 +108,7 @@ struct LockScreenView: View {
                     .padding(.top, 10)
             }
             
-            Button(action: {
-                biometricManager.authenticate()
-            }) {
-                Text("Try Again")
-                    .fontWeight(.semibold)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-            }
-            .padding(.top, 20)
-            
+ 
             Spacer()
             
             Text("Your app is protected with Face ID")
