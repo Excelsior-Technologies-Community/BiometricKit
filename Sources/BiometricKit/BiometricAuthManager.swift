@@ -21,24 +21,35 @@ public class BiometricAuthManager: ObservableObject {
     public init() {}
     
     public func authenticate() {
-        // Prevent multiple simultaneous authentication requests
-        guard !isAuthenticating else {
-            print("⏳ Authentication already in progress, skipping")
-            return
+        // Prevent multiple requests
+        guard !isAuthenticating else { return }
+
+        // ❗ 1. CHECK INFO.PLST BEFORE USING LAContext — prevents crash
+        if Bundle.main.object(forInfoDictionaryKey: "NSFaceIDUsageDescription") == nil {
+            DispatchQueue.main.async {
+                self.errorMessage = "Missing Face ID permission in Info.plist."
+                self.isUnlocked = false
+            }
+            print("❌ CRITICAL: NSFaceIDUsageDescription missing — Face ID disabled.")
+            return   // <-- EARLY EXIT, DO NOT CALL evaluatePolicy
         }
-        
+
+        // Now safe to proceed
         let context = LAContext()
         var error: NSError?
-        
+
         context.localizedFallbackTitle = ""
         context.localizedCancelTitle = "Cancel"
-        
+
+        // ❗ 2. `canEvaluatePolicy` is safe ONLY because we passed the check above
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            
             let reason = "Unlock using Face ID"
-            
+
             isAuthenticating = true
-            
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
+
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
+                                   localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     self.isAuthenticating = false
                     
@@ -51,13 +62,15 @@ public class BiometricAuthManager: ObservableObject {
                     }
                 }
             }
+
         } else {
             DispatchQueue.main.async {
-                self.errorMessage = "Face ID not available"
+                self.errorMessage = error?.localizedDescription ?? "Face ID not available"
                 self.isUnlocked = false
             }
         }
     }
+
     
     // MARK: Auto-lock functions
     public func appMovedToBackground() {
