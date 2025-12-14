@@ -15,18 +15,39 @@ class BiometricAuthManager: ObservableObject {
     @Published var isUnlocked = false
     @Published var errorMessage: String?
     
-    func authenticate() {
+    public func authenticate() {
+        // Prevent multiple simultaneous authentication requests
+        guard !isAuthenticating else {
+            print("⏳ Authentication already in progress, skipping")
+            return
+        }
+
+        // ❗ SAFETY CHECK: Prevent crash if NSFaceIDUsageDescription is missing
+        if Bundle.main.object(forInfoDictionaryKey: "NSFaceIDUsageDescription") == nil {
+            DispatchQueue.main.async {
+                self.errorMessage = "Face ID permission missing in Info.plist"
+                self.isUnlocked = false
+            }
+            print("⚠️ NSFaceIDUsageDescription missing — Face ID disabled to prevent crash.")
+            return
+        }
+
         let context = LAContext()
         var error: NSError?
-        
+
         context.localizedFallbackTitle = ""
         context.localizedCancelTitle = "Cancel"
-        
+
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             let reason = "Unlock using Face ID"
             
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
+            isAuthenticating = true
+            
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
+                                   localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
+                    self.isAuthenticating = false
+                    
                     if success {
                         self.isUnlocked = true
                         self.errorMessage = nil
@@ -38,11 +59,12 @@ class BiometricAuthManager: ObservableObject {
             }
         } else {
             DispatchQueue.main.async {
-                self.errorMessage = "Face ID not available"
+                self.errorMessage = error?.localizedDescription ?? "Face ID not available"
                 self.isUnlocked = false
             }
         }
     }
+
     
     // MARK: Auto-lock functions
     func appMovedToBackground() {
